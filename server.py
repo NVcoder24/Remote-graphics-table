@@ -3,7 +3,8 @@ from PyQt5 import QtWidgets
 import socket
 
 port = 5000
-ip = "localhost"
+ip = "192.168.1.107"
+moves_per_send = 10
 
 print(f"port: {port}")
 print(f"ip: {ip}")
@@ -19,6 +20,10 @@ class WebCanvas(QtWidgets.QLabel):
         self.sock.bind((ip, port))
         self.sock.listen(1)
 
+        self.att = 0
+        self.x = 0
+        self.y = 0
+
         self.conn, self.addr = self.sock.accept()
 
     def mousePressEvent(self, e):
@@ -26,15 +31,18 @@ class WebCanvas(QtWidgets.QLabel):
         self.point[1] = e.y()
 
     def mouseMoveEvent(self, e):
-        x = self.point[0] - e.x()
-        y = self.point[1] - e.y()
+        self.x = self.point[0] - e.x()
+        self.y = self.point[1] - e.y()
 
-        self.point[0] = e.x()
-        self.point[1] = e.y()
+        if self.att == moves_per_send:
+            self.conn.send(bytes(f"{self.x}|{self.y}", "utf-8"))
 
-        self.conn.send(bytes(f"{x}|{y}", "utf-8"))
+            self.point[0] = e.x()
+            self.point[1] = e.y()
+        else:
+            self.att += 1
 
-        print(x, y)
+        print(self.x, self.y)
 
 class MainWindow(QtWidgets.QMainWindow):
 
